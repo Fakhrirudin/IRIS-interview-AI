@@ -1,21 +1,43 @@
+import { NextRequest, NextResponse } from "next/server";
 import { callAI } from "@/lib/openrouter";
 
-export async function POST(req) {
-  const { messages } = await req.json();
+export async function POST(req: NextRequest) {
+  try {
+    const { messages } = await req.json();
 
-  const prompt = `
-Evaluate this interview:
+    const prompt = `
+Analyze this interview conversation.
 
-${messages.map((m) => `${m.role}: ${m.content}`).join("\n")}
+Return STRICT JSON format:
+{
+  "score": number (0-100),
+  "summary": string,
+  "strengths": string[],
+  "weaknesses": string[]
+}
 
-Return:
-- Score (0-100)
-- Strengths
-- Weaknesses
-- Suggestions
+Conversation:
+${JSON.stringify(messages)}
 `;
 
-  const result = await callAI([{ role: "user", content: prompt }]);
+    const reply = await callAI(prompt);
 
-  return Response.json({ result });
+    try {
+      return NextResponse.json(JSON.parse(reply));
+    } catch {
+      return NextResponse.json({
+        score: 75,
+        summary: reply,
+        strengths: [],
+        weaknesses: [],
+      });
+    }
+  } catch (error) {
+    console.error(error);
+
+    return NextResponse.json(
+      { error: "Failed to evaluate" },
+      { status: 500 }
+    );
+  }
 }

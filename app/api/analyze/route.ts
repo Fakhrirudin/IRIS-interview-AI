@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { callAI } from "@/lib/openrouter";
 
 export async function POST(req: NextRequest) {
   try {
@@ -19,28 +20,14 @@ Conversation:
 ${JSON.stringify(messages)}
 `;
 
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "openai/gpt-4o-mini",
-        messages: [{ role: "user", content: prompt }],
-      }),
-    });
-
-    const data = await response.json();
-
-    const text = data.choices?.[0]?.message?.content;
+    const reply = await callAI(prompt);
 
     try {
-      return NextResponse.json(JSON.parse(text));
+      return NextResponse.json(JSON.parse(reply));
     } catch {
       return NextResponse.json({
         score: 75,
-        summary: text,
+        summary: reply,
         strengths: [],
         weaknesses: [],
       });
